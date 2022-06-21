@@ -1,0 +1,15 @@
+metadata_version: 1
+name: Gradient-based learning drives robust representations in recurrent neural networks
+  by balancing compression and expansion
+description: Code that produces the plots of the manuscript "Gradient-based learning
+  drives robust representations in RNNs by balancing compression and expansion". This
+  code explores the relationship between dynamics and dimensionality of an RNN trained
+  to classify inputs. See the README for more information.
+tags:
+- RNN
+- chaos
+- dimensionality
+authors:
+- name: Matthew Farrell
+  affiliations:
+  - name: Harvard University
