@@ -1,5 +1,9 @@
 # Gradient-based learning drives robust representations in recurrent neural networks by balancing compression and expansion
 
+***Code is developed by Matthew Farrell***
+
+***Original version can be found on [codeocean](https://codeocean.com/capsule/2039999/tree/v1)***
+
 Code to generate the figures for the manuscript "Gradient-based learning drives robust representations in recurrent neural networks by balancing compression and expansion" published in Nature Machine Intelligence.
 
 The script figures_for_manuscript.py contains code to call plotting functions that generate the main figures in the paper, as well as Extended Data Figures 1-4, 6, and 10.
