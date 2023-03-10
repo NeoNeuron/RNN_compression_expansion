@@ -1,6 +1,6 @@
 import os
-# import autograd.numpy as np # Need this for autograd fanciness.
-import numpy as np
+import autograd.numpy as np # Need this for autograd fanciness.
+# import numpy as np
 from joblib import Memory
 import utils
 
@@ -147,6 +147,7 @@ def getSpectrum(W, b, Win=0, x=0, k_LE=None, max_iters=1000, tol=1e-3, max_ICs=1
 if __name__ == '__main__':
     # %% Test out our expression for the Jacobian
     import autograd
+    import matplotlib.pyplot as plt
 
     def gen_net_f_auton_jac(h, Wrec, b, Win=0, x=0, phi=phi):
         """
@@ -163,17 +164,24 @@ if __name__ == '__main__':
         f_auton_jac = autograd.jacobian(net_f_auton_reduced)
         return f_auton_jac
 
-    N = 4
-    Nx = 3
+    N = 200
+    Nx = 200
     Win = np.random.randn(N, Nx).T
-    Wrec = np.random.randn(N, N)
+    Wrec = np.random.randn(N, N)*2/np.sqrt(N)
     h = np.random.randn(N)
     x = np.random.randn(Nx)
-    b = 0
 
-    d1 = net_f_auton_jacob(h, Wrec, b, Win=Win, x=x, phiPrime=phiPrime)
-    temp = gen_net_f_auton_jac(h, Wrec, b, Win=Win, x=x, phi=phi)
-    d2 = temp(h)
-    print(d1)
-    print(d2)
-    print(np.allclose(d1,d2))
+    dt = 0.01
+    Weff = (1 - dt)*np.eye(N) + dt*Wrec
+
+    # d1 = net_f_auton_jacob(h, Wrec, b, Win=Win, x=x, phiPrime=phiPrime)
+    # temp = gen_net_f_auton_jac(h, Wrec, b, Win=Win, x=x, phi=phi)
+    # d2 = temp(h)
+    # print(d1)
+    # print(d2)
+    # print(np.allclose(d1,d2))
+
+    res = getSpectrum(W=Weff, b=0, Win=Win.T, x=0, k_LE=None, max_iters=1000, tol=1e-3, max_ICs=10, ICs=None, verbose=False)
+    plt.plot(res[0], 'o')
+
+# %%

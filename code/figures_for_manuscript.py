@@ -30,8 +30,8 @@ if CLEAR_PREVIOUS_RUNS:
     shutil.rmtree('../data/output')
 
 # Number parallel threads to use
-n_cores = 1 
-# n_cores = 4
+# n_cores = 20 
+n_cores = 4
 # n_cores = 10
 
 # See initialize_and_train.initialize_and_train for a description of these
@@ -44,7 +44,7 @@ high_d_input_edge_of_chaos_params = dict(N=200,
                                          X_dim=200,
                                          num_classes=2,
                                          n_lag=10,
-                                         g_radius=20,
+                                         g_radius=0.1,
                                          wout_scale=1.0,
                                          clust_sig=.02,
                                          input_scale=1.0,
@@ -58,17 +58,17 @@ high_d_input_edge_of_chaos_params = dict(N=200,
                                          batch_size=10,
                                          freeze_input=False,
                                          network='vanilla_rnn',
-                                         scheduler='plateau',
+                                         scheduler='steplr',
                                          learning_patience=5,
                                          Win='orthog',
                                          patience_before_stopping=None,
                                          hid_nonlin='tanh',
                                          saves_per_epoch=1.0,
                                          model_seed=1,
-                                         rerun=False)
+                                         rerun=True)
 
 high_d_input_strongly_chaotic_params = high_d_input_edge_of_chaos_params.copy()
-high_d_input_strongly_chaotic_params['g_radius'] = 250
+high_d_input_strongly_chaotic_params['g_radius'] = 2
 low_d_input_edge_of_chaos_params = high_d_input_edge_of_chaos_params.copy()
 low_d_input_edge_of_chaos_params['X_dim'] = 2
 low_d_input_edge_of_chaos_params['num_epochs'] = 120
@@ -91,7 +91,7 @@ subdir_preface = Path('../results/figs/')
 def make_chaos_params_list(params):
     params = params.copy()
     plist = []
-    for g in [20, 250]:
+    for g in [0.1, 2]:
         ps = params.copy()
         ps['g_radius'] = g
         plist.append(ps)
@@ -132,7 +132,10 @@ def fig2(multiprocess_lock=None):
     acc_params_sc = acc_params_eoc.copy()
     acc_params_sc['g_radius'] = 250
     epochs = list(range(acc_params_eoc['num_epochs'] + 1))
-    figname = 'fig_2d_acc_over_training'
+    figname = 'fig_2d_acc_over_training_' + \
+        f"{high_d_input_edge_of_chaos_params['g_radius']}_" + \
+        f"{high_d_input_strongly_chaotic_params['g_radius']}"
+    
     plots.acc_over_training([acc_params_eoc, acc_params_sc], seeds,
                             hue_key='g_radius', figname=figname, subdir=subdir,
                             palette=chaos_palette)
@@ -145,7 +148,9 @@ def fig2(multiprocess_lock=None):
                     make_chaos_params_list(fig2e_params_0)
     plots.dim_over_layers(plist, seeds,
                           hue_key='g_radius', style_key='num_epochs',
-                          figname="fig_2e_dim_over_time",
+                          figname="fig_2e_dim_over_time_" + \
+        f"{high_d_input_edge_of_chaos_params['g_radius']}_" + \
+        f"{high_d_input_strongly_chaotic_params['g_radius']}",
                           subdir=subdir,
                           style_order=[fig2e_params['num_epochs'], 0],
                           palette=chaos_palette,
@@ -153,7 +158,9 @@ def fig2(multiprocess_lock=None):
                          )
 
     # % Figures 2f and 2g
-    figname="fig_2f_2g_clust_holdout_over_time"
+    figname="fig_2f_2g_clust_holdout_over_time_" + \
+        f"{high_d_input_edge_of_chaos_params['g_radius']}_" + \
+        f"{high_d_input_strongly_chaotic_params['g_radius']}"
     plots.clust_holdout_over_layers(plist, seeds,
                                     hue_key='g_radius', style_key='num_epochs',
                                     figname=figname, subdir=subdir,
@@ -692,16 +699,18 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
     lock = Lock()
     processes = []
 
     # %% Run Figures 2 through 5a
+    lock = Lock()
+    processes = []
     processes += [Process(target=fig2, args=(lock,))]
-    processes += [Process(target=fig3, args=(lock,))]
-    processes += [Process(target=fig4, args=(lock,))]
-    processes += [Process(target=fig5a, args=(lock,))]
+    # processes += [Process(target=fig3, args=(lock,))]
+    # processes += [Process(target=fig4, args=(lock,))]
+    # processes += [Process(target=fig5a, args=(lock,))]
 
     # %% Run Figures 5b through 6. These simulations take much longer
     # (possibly days).
@@ -752,16 +761,18 @@ if __name__ == '__main__':
                                 # keys_ED_fig_10, keys_abbrev_ED_fig_10,
                                 # 'ED_fig_10', lock))
                  # for p in ps_list_ED_fig_10]
+#%%
+if n_cores == 1:
+    for proc in processes:
+        proc.run()
+else:
+    n_processes_simul = max(int(n_cores/2), 1)
+    chunked_processes = list(chunks(processes, n_processes_simul))
+    for i0, process_chunk in enumerate(chunked_processes):
+        print(f"Starting batch {i0+1} of {len(chunked_processes)} batches")
+        for process in process_chunk:
+            time.sleep(.5)
+            process.start()
+        [process.join() for process in process_chunk]
 
-    if n_cores == 1:
-        for proc in processes:
-            proc.run()
-    else:
-        n_processes_simul = max(int(n_cores/2), 1)
-        chunked_processes = list(chunks(processes, n_processes_simul))
-        for i0, process_chunk in enumerate(chunked_processes):
-            print(f"Starting batch {i0+1} of {len(chunked_processes)} batches")
-            for process in process_chunk:
-                time.sleep(.5)
-                process.start()
-            [process.join() for process in process_chunk]
+# %%

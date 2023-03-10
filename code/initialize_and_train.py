@@ -350,7 +350,8 @@ def initialize_and_train(N, X_clusters, n_lag, n_hold, n_out, X_dim,
                                       output_over_recurrent_time=True)
 
     elif network == 'vanilla_rnn':
-        Wrec = (1 - dt)*torch.eye(N, N) + dt*J_scaled
+        # Wrec = (1 - dt)*torch.eye(N, N) + dt*J_scaled
+        Wrec = J_scaled.clone()
         model = models.RNN(Win_instance, Wrec, Wout_instance, brec, bout,
                            nonlin, output_over_recurrent_time=True,
                            train_output=train_output_weights,

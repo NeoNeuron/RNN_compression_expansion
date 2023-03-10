@@ -44,6 +44,8 @@ def save_checkpoint(state, is_best=True, filename: Union[str, Path] = 'output/ch
 
 
 class DefaultStatsTracker:
+    """ Tracking the loss and accuracy of the model during training and validation.
+    """
     def __init__(self, accuracy: bool = True, verbose: bool = True):
         self.batch_losses = {'train': [], 'val': []}
         self.epoch_losses = {'train': [], 'val': []}
@@ -76,6 +78,8 @@ class DefaultStatsTracker:
             self.epoch_accs[phase].append(epoch_acc)
             # print()
             if self.verbose:
+                print(f"current batch_loss_len: {len(self.batch_losses[phase])}")
+                print(f"current epoch_loss_len: {len(self.epoch_losses[phase])}")
                 print(f"Average {phase} loss over this epoch: {epoch_loss}")
             if self.accuracy and self.verbose:
                 print(f"Average {phase} accuracy over this epoch: {epoch_acc}")
@@ -105,7 +109,7 @@ class StepLR(LRSchedulerTemplate):
         self.torch_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, **kwargs)
 
     def __call__(self, stats_dict):
-        if phase == 'val' and stats_dict['epoch_end']:
+        if stats_dict['current_phase'] == 'val' and stats_dict['epoch_end']:
             self.torch_lr_scheduler.step()
 
     def state_dict(self):
@@ -202,7 +206,7 @@ def train_model(model, dataloaders, device, loss_function, optimizer, stopping_e
     stats_tracker : Union[None, Callable, str]
         Object for tracking the statistics of the model over training.
     learning_scheduler : object
-        An obect that takes in a dictionary as first argument and phase as second argument. It can, for instance,
+        An object that takes in a dictionary as first argument and phase as second argument. It can, for instance,
         call an instantiation of a torch scheduler object, like those found in torch.optim.lr_scheduler, based on
         the values of the items in the dictionary.
     save_model_criterion : Optional[Callable[[Dict[int, float]], bool]] = None
@@ -292,7 +296,7 @@ def train_model(model, dataloaders, device, loss_function, optimizer, stopping_e
             outputs = model(inputs)
             loss = loss_function(outputs, targets)
             if torch.isnan(loss).item() or torch.isinf(loss).item():
-                print("NoN or inf encountered during training. Aborting.")
+                print("NaN or inf encountered during training. Aborting.")
                 # return stats_tracker.export_stats()
                 sys.exit()
             try:
@@ -362,6 +366,7 @@ def train_model(model, dataloaders, device, loss_function, optimizer, stopping_e
         vprint()
         vprint(f'Epoch {epoch+1}/{stopping_epoch}')
         vprint('-' * 10)
+        print(optimizer.param_groups[0]['lr'])
         stat_dict['epoch_end'] = True
         train(epoch)
         stat_dict['epoch_end'] = True
